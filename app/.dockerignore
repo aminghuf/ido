@@ -1,0 +1,5 @@
+k8s/
+README.md
+__pycache__/
+.git
+.venv/

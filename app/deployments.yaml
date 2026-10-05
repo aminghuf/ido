@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  labels: {app: demo-app}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: demo-app}
+  template:
+    metadata:
+      labels: {app: demo-app}
+    spec:
+      terminationGracePeriodSeconds: 30   # > preStop sleep + uvicorn drain
+      containers:
+        - name: demo-app
+          image: demo-app:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - {name: http, containerPort: 8080}
+          lifecycle:
+            preStop:                      # let endpoints update before uvicorn stops accepting
+              exec: {command: ["sleep", "5"]}
+          resources:
+            requests: {cpu: 250m, memory: 128Mi}
+            limits:   {cpu: 500m, memory: 256Mi}   # keep CPU <= 1 core: Python uses ~1 core/process (GIL)
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 2
+            failureThreshold: 1
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-app
+  labels: {app: demo-app}
+spec:
+  selector: {app: demo-app}
+  ports:
+    - {name: http, port: 80, targetPort: http}
