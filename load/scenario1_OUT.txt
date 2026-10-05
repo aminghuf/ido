@@ -1,0 +1,400 @@
+k6 run -e SCENARIO=spike -e WARMUP=5s -e RISE=2s -e HOLD=5s -e COOLDOWN=5s scenario1.js
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: scenario1.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 500 max VUs, 49s max duration (incl. graceful stop):
+              * spike: Up to 50.00 iterations/s for 19s over 5 stages (maxVUs: 50-500, gracefulStop: 30s)
+
+
+
+  █ THRESHOLDS 
+
+    dropped_iterations
+    ✓ 'count<1' count=0
+
+    http_req_duration
+    ✓ 'p(99)<200' p(99)=143.09ms
+
+    http_req_failed
+    ✓ 'rate<0.01' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 469     24.683872/s
+    checks_succeeded...: 100.00% 469 out of 469
+    checks_failed......: 0.00%   0 out of 469
+
+    ✓ status 200
+
+    HTTP
+    http_req_duration..............: avg=10.66ms min=5.88ms med=6.65ms p(90)=8.3ms  p(95)=14.42ms p(99)=143.09ms max=202.81ms
+      { expected_response:true }...: avg=10.66ms min=5.88ms med=6.65ms p(90)=8.3ms  p(95)=14.42ms p(99)=143.09ms max=202.81ms
+    http_req_failed................: 0.00% 0 out of 469
+    http_reqs......................: 469   24.683872/s
+
+    EXECUTION
+    dropped_iterations.............: 0     0/s
+    iteration_duration.............: avg=10.82ms min=5.95ms med=6.77ms p(90)=8.63ms p(95)=14.69ms p(99)=143.19ms max=202.94ms
+    iterations.....................: 469   24.683872/s
+    vus............................: 0     min=0        max=0 
+    vus_max........................: 50    min=50       max=50
+
+    NETWORK
+    data_received..................: 85 kB 4.5 kB/s
+    data_sent......................: 40 kB 2.1 kB/s
+
+
+
+
+running (19.0s), 000/050 VUs, 469 complete and 0 interrupted iterations
+spike ✓ [======================================] 000/050 VUs  19s  10.00 iters/s
+
+
+
+
+k6 run -e SCENARIO=spike scenario1.js
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: scenario1.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 500 max VUs, 11m40s max duration (incl. graceful stop):
+              * spike: Up to 50.00 iterations/s for 11m10s over 5 stages (maxVUs: 50-500, gracefulStop: 30s)
+
+
+
+  █ THRESHOLDS 
+
+    dropped_iterations
+    ✓ 'count<1' count=0
+
+    http_req_duration
+    ✓ 'p(99)<200' p(99)=176.61ms
+
+    http_req_failed
+    ✓ 'rate<0.01' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 14100   21.044469/s
+    checks_succeeded...: 100.00% 14100 out of 14100
+    checks_failed......: 0.00%   0 out of 14100
+
+    ✓ status 200
+
+    HTTP
+    http_req_duration..............: avg=12.43ms min=5.79ms med=6.77ms p(90)=9.31ms p(95)=17.99ms p(99)=176.61ms max=322.77ms
+      { expected_response:true }...: avg=12.43ms min=5.79ms med=6.77ms p(90)=9.31ms p(95)=17.99ms p(99)=176.61ms max=322.77ms
+    http_req_failed................: 0.00%  0 out of 14100
+    http_reqs......................: 14100  21.044469/s
+
+    EXECUTION
+    dropped_iterations.............: 0      0/s
+    iteration_duration.............: avg=12.56ms min=5.86ms med=6.89ms p(90)=9.52ms p(95)=18.15ms p(99)=176.72ms max=322.87ms
+    iterations.....................: 14100  21.044469/s
+    vus............................: 0      min=0          max=13
+    vus_max........................: 50     min=50         max=50
+
+    NETWORK
+    data_received..................: 2.6 MB 3.8 kB/s
+    data_sent......................: 1.2 MB 1.8 kB/s
+
+
+
+
+running (11m10.0s), 000/050 VUs, 14100 complete and 0 interrupted iterations
+spike ✓ [======================================] 000/050 VUs  11m10s  10.00 iters/s
+
+
+
+
+
+
+
+
+for r in 5 10 15 20 25 30; do
+  echo "== $r rps"
+  k6 run -q -e SCENARIO=steady -e STEADY_RPS=$r -e DURATION=1m -e ITER=60000 \
+    --summary-export=sat_$r.json ../scenario1.js 2>/dev/null
+  echo "p50=$(jq '.metrics.http_req_duration.med' sat_$r.json) \
+p99=$(jq '.metrics.http_req_duration["p(99)"]' sat_$r.json) \
+fail=$(jq '.metrics.http_req_failed.value' sat_$r.json)"
+  sleep 30
+done
+== 5 rps
+
+
+  █ THRESHOLDS 
+
+    dropped_iterations
+    ✗ 'count<1' count=1
+
+    http_req_duration
+    ✗ 'p(99)<200' p(99)=10s
+
+    http_req_failed
+    ✗ 'rate<0.01' rate=28.99%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 300    4.998436/s
+    checks_succeeded...: 71.00% 213 out of 300
+    checks_failed......: 28.99% 87 out of 300
+
+    ✗ status 200
+      ↳  71% — ✓ 213 / ✗ 87
+
+    HTTP
+    http_req_duration..............: avg=3.8s  min=17.04ms med=20.52ms p(90)=10s   p(95)=10s   p(99)=10s   max=10s 
+      { expected_response:true }...: avg=1.27s min=17.04ms med=18.65ms p(90)=5.97s p(95)=8.07s p(99)=9.67s max=9.9s
+    http_req_failed................: 28.99% 87 out of 300
+    http_reqs......................: 300    4.998436/s
+
+    EXECUTION
+    dropped_iterations.............: 1      0.016661/s
+    iteration_duration.............: avg=3.8s  min=17.18ms med=21.38ms p(90)=10s   p(95)=10s   p(99)=10s   max=10s 
+    iterations.....................: 300    4.998436/s
+    vus............................: 0      min=0         max=50
+    vus_max........................: 51     min=50        max=51
+
+    NETWORK
+    data_received..................: 39 kB  649 B/s
+    data_sent......................: 26 kB  425 B/s
+
+
+
+p50=20.523972999999998 p99=10000.92484602 fail=0.29
+== 10 rps
+
+
+  █ THRESHOLDS 
+
+    dropped_iterations
+    ✓ 'count<1' count=0
+
+    http_req_duration
+    ✓ 'p(99)<200' p(99)=22.67ms
+
+    http_req_failed
+    ✓ 'rate<0.01' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 600     9.999911/s
+    checks_succeeded...: 100.00% 600 out of 600
+    checks_failed......: 0.00%   0 out of 600
+
+    ✓ status 200
+
+    HTTP
+    http_req_duration..............: avg=19.11ms min=16.72ms med=18.85ms p(90)=20.97ms p(95)=21.72ms p(99)=22.67ms max=26.87ms
+      { expected_response:true }...: avg=19.11ms min=16.72ms med=18.85ms p(90)=20.97ms p(95)=21.72ms p(99)=22.67ms max=26.87ms
+    http_req_failed................: 0.00%  0 out of 600
+    http_reqs......................: 600    9.999911/s
+
+    EXECUTION
+    dropped_iterations.............: 0      0/s
+    iteration_duration.............: avg=19.36ms min=16.79ms med=19.16ms p(90)=21.26ms p(95)=22.1ms  p(99)=22.95ms max=27.23ms
+    iterations.....................: 600    9.999911/s
+    vus............................: 0      min=0        max=0 
+    vus_max........................: 50     min=50       max=50
+
+    NETWORK
+    data_received..................: 109 kB 1.8 kB/s
+    data_sent......................: 51 kB  850 B/s
+
+
+
+p50=18.851108 p99=22.67003655 fail=0
+== 15 rps
+
+
+  █ THRESHOLDS 
+
+    dropped_iterations
+    ✓ 'count<1' count=0
+
+    http_req_duration
+    ✓ 'p(99)<200' p(99)=180.72ms
+
+    http_req_failed
+    ✓ 'rate<0.01' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 901     15.011376/s
+    checks_succeeded...: 100.00% 901 out of 901
+    checks_failed......: 0.00%   0 out of 901
+
+    ✓ status 200
+
+    HTTP
+    http_req_duration..............: avg=25.62ms min=16.38ms med=20.26ms p(90)=23.15ms p(95)=52.57ms p(99)=180.72ms max=289.5ms
+      { expected_response:true }...: avg=25.62ms min=16.38ms med=20.26ms p(90)=23.15ms p(95)=52.57ms p(99)=180.72ms max=289.5ms
+    http_req_failed................: 0.00%  0 out of 901
+    http_reqs......................: 901    15.011376/s
+
+    EXECUTION
+    dropped_iterations.............: 0      0/s
+    iteration_duration.............: avg=25.86ms min=16.48ms med=20.49ms p(90)=23.43ms p(95)=52.72ms p(99)=180.85ms max=289.6ms
+    iterations.....................: 901    15.011376/s
+    vus............................: 0      min=0        max=1 
+    vus_max........................: 50     min=50       max=50
+
+    NETWORK
+    data_received..................: 163 kB 2.7 kB/s
+    data_sent......................: 77 kB  1.3 kB/s
+
+
+
+p50=20.263611 p99=180.729202 fail=0
+== 20 rps
+
+
+  █ THRESHOLDS 
+
+    dropped_iterations
+    ✓ 'count<1' count=0
+
+    http_req_duration
+    ✗ 'p(99)<200' p(99)=367.95ms
+
+    http_req_failed
+    ✓ 'rate<0.01' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 1200    19.999713/s
+    checks_succeeded...: 100.00% 1200 out of 1200
+    checks_failed......: 0.00%   0 out of 1200
+
+    ✓ status 200
+
+    HTTP
+    http_req_duration..............: avg=36.83ms min=16.17ms med=18.39ms p(90)=22.5ms  p(95)=195.98ms p(99)=367.95ms max=503.71ms
+      { expected_response:true }...: avg=36.83ms min=16.17ms med=18.39ms p(90)=22.5ms  p(95)=195.98ms p(99)=367.95ms max=503.71ms
+    http_req_failed................: 0.00%  0 out of 1200
+    http_reqs......................: 1200   19.999713/s
+
+    EXECUTION
+    dropped_iterations.............: 0      0/s
+    iteration_duration.............: avg=36.98ms min=16.23ms med=18.55ms p(90)=22.69ms p(95)=196.1ms  p(99)=368.06ms max=503.79ms
+    iterations.....................: 1200   19.999713/s
+    vus............................: 0      min=0         max=8 
+    vus_max........................: 50     min=50        max=50
+
+    NETWORK
+    data_received..................: 217 kB 3.6 kB/s
+    data_sent......................: 102 kB 1.7 kB/s
+
+
+
+p50=18.39059 p99=367.95838189 fail=0
+== 25 rps
+
+
+  █ THRESHOLDS 
+
+    dropped_iterations
+    ✓ 'count<1' count=0
+
+    http_req_duration
+    ✗ 'p(99)<200' p(99)=602.32ms
+
+    http_req_failed
+    ✓ 'rate<0.01' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 1500    24.981587/s
+    checks_succeeded...: 100.00% 1500 out of 1500
+    checks_failed......: 0.00%   0 out of 1500
+
+    ✓ status 200
+
+    HTTP
+    http_req_duration..............: avg=110.45ms min=16.08ms med=17.56ms p(90)=392.5ms  p(95)=483.24ms p(99)=602.32ms max=802.61ms
+      { expected_response:true }...: avg=110.45ms min=16.08ms med=17.56ms p(90)=392.5ms  p(95)=483.24ms p(99)=602.32ms max=802.61ms
+    http_req_failed................: 0.00%  0 out of 1500
+    http_reqs......................: 1500   24.981587/s
+
+    EXECUTION
+    dropped_iterations.............: 0      0/s
+    iteration_duration.............: avg=110.56ms min=16.15ms med=17.68ms p(90)=392.59ms p(95)=483.37ms p(99)=602.42ms max=802.7ms 
+    iterations.....................: 1500   24.981587/s
+    vus............................: 5      min=0         max=15
+    vus_max........................: 50     min=50        max=50
+
+    NETWORK
+    data_received..................: 272 kB 4.5 kB/s
+    data_sent......................: 128 kB 2.1 kB/s
+
+
+
+p50=17.5681955 p99=602.32331733 fail=0
+== 30 rps
+
+
+  █ THRESHOLDS 
+
+    dropped_iterations
+    ✗ 'count<1' count=124
+
+    http_req_duration
+    ✗ 'p(99)<200' p(99)=6.58s
+
+    http_req_failed
+    ✓ 'rate<0.01' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 1677    26.190018/s
+    checks_succeeded...: 100.00% 1677 out of 1677
+    checks_failed......: 0.00%   0 out of 1677
+
+    ✓ status 200
+
+    HTTP
+    http_req_duration..............: avg=3.41s min=16.78ms med=3.52s p(90)=5.65s p(95)=6.01s p(99)=6.58s max=8.08s
+      { expected_response:true }...: avg=3.41s min=16.78ms med=3.52s p(90)=5.65s p(95)=6.01s p(99)=6.58s max=8.08s
+    http_req_failed................: 0.00%  0 out of 1677
+    http_reqs......................: 1677   26.190018/s
+
+    EXECUTION
+    dropped_iterations.............: 124    1.936531/s
+    iteration_duration.............: avg=3.41s min=17.04ms med=3.52s p(90)=5.65s p(95)=6.01s p(99)=6.58s max=8.08s
+    iterations.....................: 1677   26.190018/s
+    vus............................: 63     min=2         max=167
+    vus_max........................: 174    min=50        max=174
+
+    NETWORK
+    data_received..................: 304 kB 4.7 kB/s
+    data_sent......................: 143 kB 2.2 kB/s
+
+
+
+p50=3525.17472 p99=6585.3595704 fail=0

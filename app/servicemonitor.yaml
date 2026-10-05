@@ -5,7 +5,7 @@ kind: ServiceMonitor
 metadata:
   name: demo-app
   labels:
-    release: kube-prometheus-stack
+    release: prometheus-stack
 spec:
   selector:
     matchLabels: {app: demo-app}
